@@ -1,50 +1,48 @@
 import socket
 import requests
-import whois
+import whois as pywhois  # שיניתי את השם ל-alias pywhois
+import json
 
-# פונקציה לבדוק את מצב האתר (לראות אם הוא פעיל או לא)
-def check_website_status(url):
+# פונקציה לבדיקת זמינות אתר
+def check_site_availability(url):
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            print(f"Website {url} is up and running!")
-        else:
-            print(f"Website {url} returned status code {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"Error checking {url}: {e}")
+        response = requests.get(url, timeout=5)
+        return f"[+] Site is up! Status Code: {response.status_code}"
+    except requests.exceptions.RequestException:
+        return "[-] Site is down or unreachable."
 
-# פונקציה לביצוע סריקת פורטים
-def scan_ports(target_ip, ports):
+# פונקציה לסריקת פורטים פתוחים
+def scan_ports(host):
+    print(f"[*] Scanning ports on {host}...")
+    common_ports = [21, 22, 23, 80, 443, 8080]
     open_ports = []
-    for port in ports:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    for port in common_ports:
+        sock = socket.socket()
         sock.settimeout(1)
-        result = sock.connect_ex((target_ip, port))
+        result = sock.connect_ex((host, port))
         if result == 0:
             open_ports.append(port)
         sock.close()
+    return open_ports
 
-    if open_ports:
-        print(f"Open ports on {target_ip}: {', '.join(map(str, open_ports))}")
-    else:
-        print(f"No open ports found on {target_ip}.")
-
-# פונקציה לקבלת מידע על דומיין
-def get_domain_info(domain):
+# פונקציה לאחזור מידע WHOIS על דומיין
+def domain_info(domain):
     try:
-        domain_info = whois.whois(domain)
-        print(f"Domain info for {domain}: {domain_info}")
+        info = pywhois.whois(domain)  # שימוש ב-alias pywhois
+        return json.dumps(info, indent=4)
     except Exception as e:
-        print(f"Error retrieving domain info for {domain}: {e}")
+        return f"[-] WHOIS lookup failed: {str(e)}"
 
+# פונקציה עזר להדפיס את הדוח
+def print_report(url, host):
+    print("\n[*] Report for", url)
+    print(check_site_availability(url))
+    print("Open Ports:", scan_ports(host))
+    print("WHOIS Info:\n", domain_info(host))
+
+# דוגמה לשימוש
 if __name__ == "__main__":
-    # דוגמה לשימוש:
-    url = "https://www.example.com"
-    check_website_status(url)
-
-    ip = "93.184.216.34"  # דוגמת IP (של example.com)
-    ports = [80, 443, 8080]
-    scan_ports(ip, ports)
-
-    domain = "example.com"
-    get_domain_info(domain)
+    url = input("Enter the URL (e.g. https://example.com): ")
+    host = url.split("//")[-1]  # מסלק את הפרוטוקול כמו https://
+    
+    print_report(url, host)
