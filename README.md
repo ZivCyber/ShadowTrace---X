@@ -51,7 +51,7 @@ Step 3: Download the Code
 
 Clone the repository from GitHub:
 
-git clone https://github.com/ZivCyber/Shadow-Trace-X.git
+git clone https://github.com/ZivCyber/ShadowTrace---X
 
 Navigate to the project directory:
 
